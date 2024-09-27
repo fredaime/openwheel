@@ -8,5 +8,4 @@ Splitted into two parts:
 - `openwheel-gadget` - a GUI for the tools
 
 ## openwheel-daemon
-The daemon is a simple python script that listens for the hardware events and sends them to the gadget.
-
+The daemon is a C daemon which interacts between the Dial device and dbus for signaling the desktop environment
