@@ -17,15 +17,23 @@ endif()
 set(DAEMON_SRCS
     hidreader.c
     helpers.c
+    report.c
 )
 
 set(DAEMON_HEADERS
     openwheel.h
     helpers.h
+    report.h
 )
 
 # Create executable
 add_executable(asus_wheel ${DAEMON_SRCS} ${DAEMON_HEADERS})
+
+if(BUILD_TESTS)
+    add_executable(test_report test_report.c report.c)
+    target_compile_options(test_report PRIVATE -Wall -Wextra)
+    add_test(NAME hid_report COMMAND test_report)
+endif()
 
 # Include directories
 target_include_directories(asus_wheel PRIVATE
