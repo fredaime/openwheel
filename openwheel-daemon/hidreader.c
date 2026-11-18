@@ -1,6 +1,5 @@
 #include <fcntl.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <unistd.h>
 #include <dbus/dbus.h>
 #include <sys/syslog.h>
@@ -10,13 +9,9 @@
 #include "openwheel.h"
 #include "helpers.h"
 #include "report.h"
-
-
-
 int main(int argc, char **argv) {
-    int notify = 1;
-    if (argc == 2 && strcmp(argv[1], "--no-notify") == 0) notify = 0;
-    else if (argc != 1) {
+    const bool notify = argc == 1;
+    if (!notify && (argc != 2 || strcmp(argv[1], "--no-notify") != 0)) {
         fprintf(stderr, "Usage: %s [--no-notify]\n", argv[0]);
         return 1;
     }
@@ -29,9 +24,9 @@ int main(int argc, char **argv) {
     }
 
     syslog(LOG_INFO, "Found ASUS Dial at %s", device_path);
-    int fd = open(device_path, O_RDONLY);
+    int fd = open(device_path, O_RDONLY | O_CLOEXEC);
     if (fd < 0) {
-        syslog(LOG_ERR, "Failed to open HID device %s", device_path);
+        syslog(LOG_ERR, "Failed to open HID device %s: %s", device_path, strerror(errno));
         return 1;
     }
 
@@ -64,20 +59,30 @@ int main(int argc, char **argv) {
     }
 
     uint8_t packet[64];
-    WheelEvent events[2];
-    int was_down = 0;
-    if (notify) send_notification("OpenWheel", "OpenWheel openwheel-daemon started");
-    while (1) {
-        ssize_t bytesRead = read(fd, packet, sizeof(packet));
-        if (bytesRead < 0 && errno == EINTR) continue;
-        if (bytesRead <= 0) {
-            syslog(LOG_ERR, "HID device disconnected or read failed");
+    WheelEvent events[WHEEL_MAX_EVENTS];
+    bool button_down = false;
+    if (notify) {
+        send_notification("OpenWheel", "OpenWheel openwheel-daemon started");
+    }
+    for (;;) {
+        ssize_t bytes_read = read(fd, packet, sizeof(packet));
+        if (bytes_read < 0) {
+            if (errno == EINTR) {
+                continue;
+            }
+            syslog(LOG_ERR, "HID read failed for %s: %s", device_path, strerror(errno));
             break;
         }
-        size_t count = wheel_process_report(packet, (size_t)bytesRead, &was_down, events);
+        if (bytes_read == 0) {
+            syslog(LOG_ERR, "HID device disconnected: %s", device_path);
+            break;
+        }
+
+        size_t count = wheel_process_report(packet, (size_t)bytes_read, &button_down, events);
         for (size_t i = 0; i < count; i++) {
-            send_dbus_signal(connection, events[i].type == WHEEL_ROTATE ?
-                             DIAL_ROTATE_SIGNAL : DIAL_PRESS_SIGNAL, events[i].value);
+            const char *name = events[i].type == WHEEL_ROTATE
+                ? DIAL_ROTATE_SIGNAL : DIAL_PRESS_SIGNAL;
+            send_dbus_signal(connection, name, events[i].value);
         }
     }
     close(fd);

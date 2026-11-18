@@ -39,7 +39,13 @@ void DialController::setupConnections()
 {
     // D-Bus interface connections
     connect(m_dbusInterface.get(), &DBusInterface::rotationChanged,
-            this, &DialController::onRotationChanged);
+            this, [this](int delta) {
+                // The gadget's thresholds and synchronous actions are tuned
+                // for one tick per report; the bus carries the full value.
+                if (delta != 0) {
+                    onRotationChanged(delta > 0 ? 1 : -1);
+                }
+            });
     connect(m_dbusInterface.get(), &DBusInterface::buttonPressed,
             this, &DialController::onButtonPressed);
     connect(m_dbusInterface.get(), &DBusInterface::buttonReleased,
