@@ -8,14 +8,13 @@ CMakeCache.txt
 CMakeFiles/
 cmake_install.cmake
 Makefile
-*.cmake
 
 # Compiled binaries
 *.o
 *.so
 *.a
-openwheel-gadget
-asus_wheel
+/bin/openwheel-gadget
+/bin/asus_wheel
 
 # Qt/QML compiled files
 *.qmlc

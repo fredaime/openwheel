@@ -166,7 +166,8 @@ int find_hidraw_device(char *device_path, size_t path_size) {
     // Iterate through the hidrawX directories
     while ((entry = readdir(dp)) != NULL) {
         if (entry->d_type == DT_LNK) {
-            char sysfs_device_path[BUFFER_SIZE];
+            char sysfs_device_path[sizeof(SYSFS_HIDRAW_PATH) +
+                                   sizeof(entry->d_name) + sizeof("/device/product")];
             char file_content[BUFFER_SIZE];
 
             // Try USB path first: device/product
@@ -175,9 +176,9 @@ int find_hidraw_device(char *device_path, size_t path_size) {
 
             if (read_sysfs_file(sysfs_device_path, file_content, sizeof(file_content)) == 0) {
                 if (strstr(file_content, DEVICE_NAME)) {
-                    snprintf(device_path, path_size, "/dev/%s", entry->d_name);
+                    int length = snprintf(device_path, path_size, "/dev/%s", entry->d_name);
                     closedir(dp);
-                    return 0;
+                    return length >= 0 && (size_t)length < path_size ? 0 : -1;
                 }
             }
 
@@ -190,9 +191,9 @@ int find_hidraw_device(char *device_path, size_t path_size) {
                 while (fgets(file_content, sizeof(file_content), fp) != NULL) {
                     if (strstr(file_content, DEVICE_NAME)) {
                         fclose(fp);
-                        snprintf(device_path, path_size, "/dev/%s", entry->d_name);
+                        int length = snprintf(device_path, path_size, "/dev/%s", entry->d_name);
                         closedir(dp);
-                        return 0;
+                        return length >= 0 && (size_t)length < path_size ? 0 : -1;
                     }
                 }
                 fclose(fp);
@@ -233,6 +234,7 @@ void send_notification(const char *summary, const char *body) {
 
     if (msg == NULL) {
         fprintf(stderr, "Message Null\n");
+        dbus_connection_unref(conn);
         return;
     }
 
@@ -268,4 +270,5 @@ void send_notification(const char *summary, const char *body) {
 
     dbus_connection_flush(conn);
     dbus_message_unref(msg);
+    dbus_connection_unref(conn);
 }
