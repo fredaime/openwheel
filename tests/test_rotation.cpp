@@ -10,7 +10,7 @@ class TestRotation : public QObject
 
 private Q_SLOTS:
     void testInitialState();
-    void testAccelerationCurve();
+    void testAccelerationRespectsMinimumThreshold();
     void testReset();
     void testZeroDeltaIgnored();
     void testActionTriggered();
@@ -25,21 +25,22 @@ void TestRotation::testInitialState()
     QCOMPARE(handler.isAdjusting(), 0);
 }
 
-void TestRotation::testAccelerationCurve()
+void TestRotation::testAccelerationRespectsMinimumThreshold()
 {
-    // Test via the public interface: slow rotation should not accelerate
     RotationHandler handler;
     handler.setAccelerationEnabled(1);
     handler.setBaseThreshold(15);
 
-    // A single small rotation shouldn't trigger (below threshold)
+    // Three degrees remain below the threshold at every acceleration factor.
+    // Elapsed time between unit-test calls varies on loaded runners.
     QSignalSpy spy(&handler, &RotationHandler::actionTriggered);
-    handler.onRotation(10);
+    for (int i = 0; i < 3; ++i) {
+        handler.onRotation(1);
+    }
     QCOMPARE(spy.count(), 0);
 
-    // Enough rotation should trigger
-    handler.onRotation(10);
-    QVERIFY(spy.count() >= 1);
+    handler.onRotation(15);
+    QCOMPARE(spy.count(), 1);
 }
 
 void TestRotation::testReset()
