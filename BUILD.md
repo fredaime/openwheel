@@ -17,11 +17,11 @@ OpenWheel uses CMake as its build system with support for:
 - C11 compiler (for openwheel-daemon)
 - C++20 compiler (for openwheel-gadget)
 - pkg-config
-- DBus development libraries
+- D-Bus development libraries (for openwheel-daemon)
 
 ### For Gadget Component
-- Qt5 (5.15+) or Qt6
-- Qt modules: Core, Gui, Widgets, Qml, Quick, DBus
+- Qt6 with Core, Gui, Widgets, Qml, Quick, QuickControls2 and DBus
+- Qt6 Test module when `BUILD_TESTS=ON`
 
 ### Optional
 - KDE Frameworks 6 (for enhanced features)
@@ -107,11 +107,12 @@ ctest -j$(nproc)
 
 ### Available Tests
 
-- `check_build_outputs` - Verifies build completed successfully
-- `daemon_executable_exists` - Checks daemon binary exists (if built)
-- `gadget_executable_exists` - Checks gadget binary exists (if built)
-- `version_test` - Validates project version
-- `config_summary` - Displays build configuration
+- `hid_report` tests HID decoding and button/rotation ordering (daemon builds).
+- `test_rotation` tests the Qt rotation handler (gadget builds).
+- `daemon_executable_exists` and `gadget_executable_exists` check the requested build artifacts.
+
+The daemon-only build and tests require no Qt dependencies.
+Configure with `cmake -S . -B build-daemon -DBUILD_GADGET=OFF`.
 
 ## Installation
 
@@ -219,18 +220,6 @@ sudo dnf install libX11-devel libXtst-devel
 sudo pacman -S cmake base-devel pkg-config dbus
 sudo pacman -S qt6-base qt6-declarative
 sudo pacman -S libx11 libxtst
-```
-
-### Qt Version Issues
-
-If both Qt5 and Qt6 are installed and you want to use a specific version:
-
-```bash
-# Force Qt6
-cmake -DQT_VERSION_MAJOR=6 ..
-
-# Force Qt5
-cmake -DQT_VERSION_MAJOR=5 ..
 ```
 
 ### Build Warnings

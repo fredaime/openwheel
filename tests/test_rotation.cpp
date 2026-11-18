@@ -111,5 +111,5 @@ void TestRotation::testBaseThreshold()
     QVERIFY(spy.count() >= 1); // Now accumulated 35 > 30
 }
 
-QTEST_MAIN(TestRotation)
+QTEST_GUILESS_MAIN(TestRotation)
 #include "test_rotation.moc"

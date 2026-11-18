@@ -19,7 +19,9 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
 # Include standard CMake modules
 include(GNUInstallDirs)
-include(CTest)
+if(BUILD_TESTS)
+    enable_testing()
+endif()
 
 # Add subdirectories
 if(BUILD_DAEMON)
@@ -34,7 +36,6 @@ endif()
 
 # Enable testing
 if(BUILD_TESTS)
-    enable_testing()
     add_subdirectory(tests)
     message(STATUS "Testing enabled")
 endif()
